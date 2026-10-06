@@ -17,34 +17,22 @@ export type MainParamList = {
 
 const Drawer = createDrawerNavigator<MainParamList>();
 
-const TITLES: Record<keyof MainParamList, string> = {
-  Perfil: 'Mi perfil',
-  Fotos: 'Galería musical',
-  Video: 'Videos',
-  Web: 'Navegador',
-  Botones: 'Reproductor',
-};
-
 /**
  * Esquema maestro–detalle: el drawer "permanent" deja el menú siempre visible a la izquierda
- * y cada sección se pinta en el área de la derecha (RF01 / RF08).
+ * y cada sección se pinta en el área de la derecha (RF01 / RF08). Cada pantalla dibuja su
+ * propio encabezado (ScreenContainer), por eso el del navegador va oculto.
  */
 export function MainNavigator() {
   return (
     <Drawer.Navigator
       initialRouteName="Perfil"
       drawerContent={(props) => <SideMenu {...props} />}
-      screenOptions={({ route }) => ({
+      screenOptions={{
         drawerType: 'permanent',
-        drawerStyle: { width: 84, backgroundColor: colors.surface, borderRightWidth: 0 },
-        headerTitle: TITLES[route.name],
-        headerLeft: () => null,
-        headerStyle: { backgroundColor: colors.background },
-        headerShadowVisible: false,
-        headerTintColor: colors.text,
-        headerTitleStyle: { fontWeight: '700' },
+        drawerStyle: { width: 80, backgroundColor: colors.surface, borderRightWidth: 0 },
+        headerShown: false,
         sceneStyle: { backgroundColor: colors.background },
-      })}
+      }}
     >
       <Drawer.Screen name="Perfil" component={ProfileScreen} />
       <Drawer.Screen name="Fotos" component={PhotosScreen} />

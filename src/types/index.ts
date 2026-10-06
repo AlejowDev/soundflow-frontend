@@ -30,7 +30,11 @@ export interface Video {
   id: string;
   title: string;
   description: string;
+  author: string;
   videoUrl: string;
+  thumbnailUrl: string;
+  /** Duración en segundos. */
+  duration: number;
 }
 
 export interface Song {

@@ -2,52 +2,47 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Button } from '../../components/Button';
+import { Card, SectionTitle } from '../../components/Card';
+import { FormError } from '../../components/FormError';
+import { IconButton } from '../../components/IconButton';
 import { Input } from '../../components/Input';
 import { ScreenContainer } from '../../components/ScreenContainer';
+import { ScrollBox } from '../../components/ScrollBox';
 import { mediaUrl } from '../../config/environment';
 import { useAuth } from '../../hooks/useAuth';
-import { usePlayer } from '../../hooks/usePlayer';
 import { usersService } from '../../services/users.service';
 import { useAuthStore } from '../../store/authStore';
-import { colors, radius, spacing, typography } from '../../theme';
+import { colors, fonts, radius, spacing, typography } from '../../theme';
 import { UpdateUserInput, User } from '../../types';
+import { parseEntries } from '../../utils/profile';
 
 /** Perfil del usuario: foto, información académica, estudios y experiencia (RF02). */
 export function ProfileScreen() {
-  const { user, logout } = useAuth();
-  const { stop } = usePlayer();
+  const { user } = useAuth();
   const [editing, setEditing] = useState(false);
 
   if (!user) return null;
 
-  const handleLogout = async () => {
-    stop();
-    await logout();
-  };
-
   return (
-    <ScreenContainer>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.header}>
-          <Avatar user={user} />
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={typography.title} numberOfLines={2}>{user.name}</Text>
-            <Text style={[typography.body, { color: colors.primary }]}>{user.headline || 'Sin titular'}</Text>
-            <Text style={typography.caption}>{user.email}</Text>
-          </View>
-        </View>
+    <ScreenContainer
+      title="Mi Perfil"
+      subtitle={user.headline || 'Completa tu titular profesional'}
+      right={
+        editing ? null : <IconButton icon="create-outline" label="Editar perfil" size={42} onPress={() => setEditing(true)} />
+      }
+    >
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ProfileCard user={user} />
 
         {editing ? (
           <EditForm user={user} onDone={() => setEditing(false)} />
         ) : (
           <>
-            <Field label="Universidad" value={user.university} />
-            <ScrollField label="Estudios" value={user.studies} />
-            <ScrollField label="Experiencia profesional" value={user.experience} />
-            <View style={styles.actions}>
-              <Button title="Editar perfil" onPress={() => setEditing(true)} style={{ flex: 1 }} />
-              <Button title="Salir" variant="ghost" onPress={handleLogout} style={{ flex: 1 }} />
-            </View>
+            <SectionTitle>Estudios y Certificaciones</SectionTitle>
+            <EntryList text={user.studies} empty="Aún no has agregado estudios." icon="school" />
+
+            <SectionTitle>Experiencia Profesional</SectionTitle>
+            <EntryList text={user.experience} empty="Aún no has agregado experiencia." icon="briefcase" />
           </>
         )}
       </ScrollView>
@@ -55,36 +50,59 @@ export function ProfileScreen() {
   );
 }
 
+function ProfileCard({ user }: { user: User }) {
+  const handle = `@${user.email.split('@')[0]}`;
+  return (
+    <Card style={styles.profileCard}>
+      <Avatar user={user} />
+      <View style={{ flex: 1, gap: 4 }}>
+        <Text style={typography.title} numberOfLines={2}>{user.name}</Text>
+        <Text style={styles.handle} numberOfLines={1}>{handle}</Text>
+        {user.university ? (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText} numberOfLines={1}>{user.university}</Text>
+          </View>
+        ) : null}
+      </View>
+    </Card>
+  );
+}
+
 function Avatar({ user }: { user: User }) {
-  if (user.photoUrl) {
-    return <Image source={{ uri: mediaUrl(user.photoUrl) }} style={styles.avatar} contentFit="cover" />;
-  }
   const initials = user.name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
   return (
-    <View style={[styles.avatar, styles.avatarFallback]}>
-      <Text style={styles.initials}>{initials}</Text>
+    <View style={styles.avatarRing}>
+      {user.photoUrl ? (
+        <Image source={{ uri: mediaUrl(user.photoUrl) }} style={styles.avatar} contentFit="cover" />
+      ) : (
+        <View style={[styles.avatar, styles.avatarFallback]}>
+          <Text style={styles.initials}>{initials}</Text>
+        </View>
+      )}
     </View>
   );
 }
 
-function Field({ label, value }: { label: string; value: string | null }) {
+/** Lista de entradas con su propio desplazamiento para no ocupar toda la pantalla (contenido extenso). */
+function EntryList({ text, empty, icon }: { text: string | null; empty: string; icon: 'school' | 'briefcase' }) {
+  const entries = parseEntries(text);
+  if (!entries.length) {
+    return (
+      <Card>
+        <Text style={[typography.body, { color: colors.textMuted }]}>{empty}</Text>
+      </Card>
+    );
+  }
   return (
-    <View style={styles.field}>
-      <Text style={typography.label}>{label}</Text>
-      <Text style={typography.body}>{value || '—'}</Text>
-    </View>
-  );
-}
-
-/** Campo de contenido extenso con su propio desplazamiento para no ocupar toda la pantalla. */
-function ScrollField({ label, value }: { label: string; value: string | null }) {
-  return (
-    <View style={styles.field}>
-      <Text style={typography.label}>{label}</Text>
-      <ScrollView style={styles.scrollBox} nestedScrollEnabled>
-        <Text style={typography.body}>{value || 'Aún no has agregado información.'}</Text>
-      </ScrollView>
-    </View>
+    <ScrollBox maxHeight={190}>
+      {entries.map((e, i) => (
+        <View key={i} style={[styles.entry, i > 0 && styles.entryDivider]}>
+          <Text style={styles.entryTitle}>{e.title}</Text>
+          {e.place ? <Text style={styles.entryPlace}>{e.place}</Text> : null}
+          {e.detail ? <Text style={typography.caption}>{e.detail}</Text> : null}
+        </View>
+      ))}
+    </ScrollBox>
   );
 }
 
@@ -115,29 +133,46 @@ function EditForm({ user, onDone }: { user: User; onDone: () => void }) {
     }
   };
 
+  const hint = 'Una entrada por línea: Título | Lugar | Detalle';
+
   return (
-    <View style={{ gap: spacing.md }}>
-      <Input label="Nombre" value={form.name} onChangeText={update('name')} />
-      <Input label="Titular" value={form.headline ?? ''} onChangeText={update('headline')} placeholder="Ej: Estudiante de Ingeniería" />
-      <Input label="Universidad" value={form.university ?? ''} onChangeText={update('university')} />
-      <Input label="Estudios" value={form.studies ?? ''} onChangeText={update('studies')} multiline />
-      <Input label="Experiencia profesional" value={form.experience ?? ''} onChangeText={update('experience')} multiline />
-      {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
+    <Card title="Editar perfil" style={{ gap: spacing.lg }}>
+      <Input label="Nombre" icon="person-outline" value={form.name} onChangeText={update('name')} maxLength={80} />
+      <Input label="Titular" icon="sparkles-outline" value={form.headline ?? ''} onChangeText={update('headline')}
+        placeholder="Ej: Music Producer & Tech Researcher" maxLength={120} />
+      <Input label="Universidad" icon="school-outline" value={form.university ?? ''} onChangeText={update('university')} maxLength={120} />
+      <Input label="Estudios" value={form.studies ?? ''} onChangeText={update('studies')} multiline hint={hint} maxLength={3000} />
+      <Input label="Experiencia profesional" value={form.experience ?? ''} onChangeText={update('experience')} multiline
+        hint={hint} maxLength={3000} />
+      <FormError message={error} />
       <View style={styles.actions}>
-        <Button title="Guardar" onPress={save} loading={saving} style={{ flex: 1 }} />
-        <Button title="Cancelar" variant="ghost" onPress={onDone} style={{ flex: 1 }} />
+        <Button title="Cancelar" variant="secondary" onPress={onDone} style={{ flex: 1 }} />
+        <Button title="Guardar" icon="checkmark" onPress={save} loading={saving} style={{ flex: 1 }} />
       </View>
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { padding: spacing.lg, gap: spacing.lg },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  avatar: { width: 76, height: 76, borderRadius: radius.pill },
+  scroll: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
+  profileCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  avatarRing: { padding: 3, borderRadius: radius.pill, borderWidth: 2, borderColor: colors.primary },
+  avatar: { width: 72, height: 72, borderRadius: radius.pill },
   avatarFallback: { backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
-  initials: { fontSize: 26, fontWeight: '700', color: colors.primary },
-  field: { gap: spacing.xs, backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
-  scrollBox: { maxHeight: 120 },
+  initials: { fontSize: 26, fontFamily: fonts.bold, color: colors.primary },
+  handle: { fontSize: 13, fontFamily: fonts.medium, color: colors.primary },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primarySoft,
+    maxWidth: '100%',
+  },
+  badgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 },
+  entry: { gap: 3, paddingVertical: spacing.md },
+  entryDivider: { borderTopWidth: 1, borderTopColor: colors.border },
+  entryTitle: { fontSize: 15, fontFamily: fonts.semibold, color: colors.text },
+  entryPlace: { fontSize: 11, fontFamily: fonts.bold, color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 },
   actions: { flexDirection: 'row', gap: spacing.md },
 });

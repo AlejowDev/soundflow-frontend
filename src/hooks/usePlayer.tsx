@@ -16,6 +16,10 @@ interface PlayerContextValue {
   previous: () => void;
   seek: (seconds: number) => void;
   stop: () => void;
+  repeat: boolean;
+  shuffle: boolean;
+  toggleRepeat: () => void;
+  toggleShuffle: () => void;
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -26,6 +30,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const status = useAudioPlayerStatus(player);
   const [queue, setQueueState] = useState<Song[]>([]);
   const [index, setIndex] = useState(-1);
+  const [repeat, setRepeat] = useState(false);
+  const [shuffle, setShuffle] = useState(false);
   const queueRef = useRef<Song[]>([]);
 
   useEffect(() => {
@@ -55,8 +61,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const next = useCallback(() => {
     const len = queueRef.current.length;
-    if (len) playAt((index + 1) % len);
-  }, [index, playAt]);
+    if (!len) return;
+    if (shuffle && len > 1) {
+      // Aleatorio: cualquier canción distinta de la actual.
+      let i = index;
+      while (i === index) i = Math.floor(Math.random() * len);
+      playAt(i);
+    } else {
+      playAt((index + 1) % len);
+    }
+  }, [index, playAt, shuffle]);
 
   const previous = useCallback(() => {
     const len = queueRef.current.length;
@@ -79,8 +93,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setIndex(-1);
   }, [player]);
 
+  const toggleRepeat = useCallback(() => setRepeat((r) => !r), []);
+  const toggleShuffle = useCallback(() => setShuffle((v) => !v), []);
+
   useEffect(() => {
-    if (status.didJustFinish) next();
+    if (!status.didJustFinish) return;
+    // Repetir: vuelve a sonar la misma canción; si no, pasa a la siguiente.
+    if (repeat) {
+      player.seekTo(0);
+      player.play();
+    } else {
+      next();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status.didJustFinish]);
 
@@ -99,6 +123,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         previous,
         seek,
         stop,
+        repeat,
+        shuffle,
+        toggleRepeat,
+        toggleShuffle,
       }}
     >
       {children}

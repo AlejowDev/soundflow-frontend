@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0B0B10",
+        "backgroundColor": "#08080C",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -26,9 +26,10 @@
     "plugins": [
       "expo-video",
       "expo-audio",
-      "expo-image"
+      "expo-image",
+      "expo-font"
     ],
     "scheme": "soundflow",
-    "backgroundColor": "#0B0B10"
+    "backgroundColor": "#08080C"
   }
 }

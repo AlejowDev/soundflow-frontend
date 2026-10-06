@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from '../../components/Button';
+import { FormError } from '../../components/FormError';
 import { Input } from '../../components/Input';
 import { useAuth } from '../../hooks/useAuth';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { colors, typography } from '../../theme';
 import { isEmail } from '../../utils/validators';
-import { AuthLayout } from './AuthLayout';
+import { AuthLayout, AuthSwitch } from './AuthLayout';
 
 export function LoginScreen({ navigation }: NativeStackScreenProps<AuthStackParamList, 'Login'>) {
   const { login } = useAuth();
@@ -29,17 +29,15 @@ export function LoginScreen({ navigation }: NativeStackScreenProps<AuthStackPara
   };
 
   return (
-    <AuthLayout title="Inicia sesión" subtitle="Explora y reproduce tu música favorita.">
-      <Input label="Correo" value={email} onChangeText={setEmail} placeholder="tu@correo.com"
-        autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
-      <Input label="Contraseña" value={password} onChangeText={setPassword} placeholder="••••••"
-        secureTextEntry autoComplete="password" onSubmitEditing={submit} />
-      {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
-      <Button title="Entrar" onPress={submit} loading={loading} />
-      <Pressable onPress={() => navigation.navigate('Register')}>
-        <Text style={[typography.body, { textAlign: 'center', color: colors.textMuted }]}>
-          ¿No tienes cuenta? <Text style={{ color: colors.primary, fontWeight: '600' }}>Regístrate</Text>
-        </Text>
+    <AuthLayout title="Bienvenido de nuevo" subtitle="Inicia sesión para seguir escuchando.">
+      <Input label="Correo" icon="mail-outline" value={email} onChangeText={setEmail} placeholder="tu@correo.com"
+        autoCapitalize="none" keyboardType="email-address" autoComplete="email" returnKeyType="next" />
+      <Input label="Contraseña" icon="lock-closed-outline" password value={password} onChangeText={setPassword}
+        placeholder="Tu contraseña" autoComplete="password" returnKeyType="go" onSubmitEditing={submit} />
+      <FormError message={error} />
+      <Button title="Entrar" icon="log-in-outline" size="lg" onPress={submit} loading={loading} />
+      <Pressable onPress={() => navigation.navigate('Register')} hitSlop={8}>
+        <AuthSwitch question="¿No tienes cuenta?" action="Regístrate" />
       </Pressable>
     </AuthLayout>
   );

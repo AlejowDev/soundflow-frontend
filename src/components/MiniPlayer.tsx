@@ -3,7 +3,8 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { mediaUrl } from '../config/environment';
 import { usePlayer } from '../hooks/usePlayer';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, fonts, radius, spacing, typography } from '../theme';
+import { tap } from '../utils/haptics';
 
 /** Barra compacta que muestra la canción actual mientras se navega por otras secciones. */
 export function MiniPlayer() {
@@ -19,10 +20,25 @@ export function MiniPlayer() {
           <Text style={styles.title} numberOfLines={1}>{current.title}</Text>
           <Text style={typography.caption} numberOfLines={1}>{current.artist}</Text>
         </View>
-        <Pressable accessibilityLabel={isPlaying ? 'Pausar' : 'Reproducir'} onPress={togglePlay} hitSlop={10}>
-          <Ionicons name={isPlaying ? 'pause' : 'play'} size={24} color={colors.text} />
+        <Pressable
+          accessibilityLabel={isPlaying ? 'Pausar' : 'Reproducir'}
+          onPress={() => {
+            tap();
+            togglePlay();
+          }}
+          hitSlop={10}
+          style={styles.play}
+        >
+          <Ionicons name={isPlaying ? 'pause' : 'play'} size={18} color={colors.white} style={!isPlaying && { marginLeft: 2 }} />
         </Pressable>
-        <Pressable accessibilityLabel="Siguiente" onPress={next} hitSlop={10}>
+        <Pressable
+          accessibilityLabel="Siguiente"
+          onPress={() => {
+            tap();
+            next();
+          }}
+          hitSlop={10}
+        >
           <Ionicons name="play-skip-forward" size={20} color={colors.text} />
         </Pressable>
       </View>
@@ -34,10 +50,26 @@ export function MiniPlayer() {
 }
 
 const styles = StyleSheet.create({
-  container: { margin: spacing.sm, backgroundColor: colors.surfaceAlt, borderRadius: radius.md, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.sm, paddingRight: spacing.md },
-  cover: { width: 38, height: 38, borderRadius: radius.sm },
-  title: { fontSize: 13, fontWeight: '600', color: colors.text },
+  container: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.sm, paddingRight: spacing.lg },
+  cover: { width: 42, height: 42, borderRadius: radius.sm },
+  title: { fontSize: 14, fontFamily: fonts.semibold, color: colors.text },
+  play: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   bar: { height: 2, backgroundColor: colors.border },
   barFill: { height: '100%', backgroundColor: colors.primary },
 });
